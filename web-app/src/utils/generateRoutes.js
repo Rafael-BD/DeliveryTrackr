@@ -4,7 +4,7 @@ export async function getRouteCoordinates() {
     const start = '-45.893876,-23.221070'; // Coordenadas de partida
     const end = '-45.890856,-23.221954'; // Coordenadas de destino
 
-    const apiKey = '5b3ce3597851110001cf6248190eec529bcc4b8b8162f575c2629104';
+    const apiKey = '';
     const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${start}&end=${end}`;
 
     try {

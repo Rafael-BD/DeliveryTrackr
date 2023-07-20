@@ -1,39 +1,31 @@
+// App.js
 import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getRouteCoordinates } from './utils/generateRoutes';
+import socketIOClient from 'socket.io-client';
 
 const App = () => {
-  const [location, setLocation] = useState(null);
-  const [routeCoordinates, setRouteCoordinates] = useState([]);
+  const [location, setLocation] = useState([-23.221070, -45.893876]);
+  const [center, setCenter] = useState(null);
   const [currentMarker, setCurrentMarker] = useState(null);
 
   useEffect(() => {
-    getRouteCoordinates()
-      .then((coordinates) => {
-        setRouteCoordinates(coordinates);
-      })
-      .catch((error) => {
-        console.error('Erro ao obter as coordenadas do caminho:', error);
-      });
-  }, []);
+    // Conectar-se ao servidor Socket.IO
+    const socket = socketIOClient('http://localhost:4000');
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentMarker((prevMarker) => {
-        const nextMarkerIndex = (prevMarker ? routeCoordinates.findIndex((coord) => coord === prevMarker) : -1) + 1;
-        if (nextMarkerIndex >= routeCoordinates.length) {
-          clearInterval(interval);
-        }
-        return routeCoordinates[nextMarkerIndex];
-      });
-    }, 1000);
+    // Receber as coordenadas em tempo real do servidor
+    socket.on('coordinate', (coordinate) => {
+      setCurrentMarker([coordinate[1], coordinate[0]]);
+      !center && setCenter([coordinate[1], coordinate[0]]);
+      console.log('Recebendo coordenadas do servidor:', coordinate);
+    });
 
+    // Desconectar-se do servidor ao desmontar o componente
     return () => {
-      clearInterval(interval);
+      socket.disconnect();
     };
-  }, [routeCoordinates]);
+  }, [center]);
 
   const createCustomIcon = () =>
     new Icon({
@@ -44,12 +36,15 @@ const App = () => {
 
   return (
     <div style={{ height: '100vh' }}>
-      {routeCoordinates.length > 0 && (
-        <MapContainer center={[-23.221070,-45.893876]} zoom={13} style={{ height: '100%' }}>
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} />
-          {currentMarker && <Marker position={[currentMarker[1], currentMarker[0]]} icon={createCustomIcon()} />}
-        </MapContainer>
-      )}
+      {
+        currentMarker && 
+        (
+          <MapContainer center={center} zoom={13} style={{ height: '100%' }}>
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} />
+            {currentMarker && <Marker position={currentMarker} icon={createCustomIcon()} />}
+          </MapContainer>
+        )
+      }
     </div>
   );
 };
