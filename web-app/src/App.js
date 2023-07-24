@@ -6,19 +6,22 @@ import 'leaflet/dist/leaflet.css';
 import socketIOClient from 'socket.io-client';
 
 const App = () => {
-  const [location, setLocation] = useState([-23.221070, -45.893876]);
   const [center, setCenter] = useState(null);
-  const [currentMarker, setCurrentMarker] = useState(null);
+  const [currentMarkers, setCurrentMarkers] = useState({});
 
   useEffect(() => {
     // Conectar-se ao servidor Socket.IO
     const socket = socketIOClient('http://localhost:4000');
 
     // Receber as coordenadas em tempo real do servidor
-    socket.on('coordinate', (coordinate) => {
-      setCurrentMarker([coordinate[1], coordinate[0]]);
-      !center && setCenter([coordinate[1], coordinate[0]]);
+    socket.on('coordinate', ({ deviceId, coordinate }) => {
+      setCurrentMarkers((prevDevicesData) => ({
+        ...prevDevicesData,
+        [deviceId]: coordinate,
+      }));
+      !center && setCenter(coordinate);
       console.log('Recebendo coordenadas do servidor:', coordinate);
+      console.log('Dispositivo:', deviceId);
     });
 
     // Desconectar-se do servidor ao desmontar o componente
@@ -36,15 +39,19 @@ const App = () => {
 
   return (
     <div style={{ height: '100vh' }}>
-      {
-        currentMarker && 
-        (
-          <MapContainer center={center} zoom={13} style={{ height: '100%' }}>
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} />
-            {currentMarker && <Marker position={currentMarker} icon={createCustomIcon()} />}
-          </MapContainer>
-        )
-      }
+        {
+          center && (
+            <MapContainer center={center} zoom={13} style={{ height: '100%' }}>
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} />
+              {currentMarkers && 
+                Object.entries(currentMarkers).map(([deviceId, coordinates]) => (
+                  <Marker key={deviceId} position={coordinates} icon={createCustomIcon()} />
+                ))
+              }
+            </MapContainer>
+          )
+        }
+        
     </div>
   );
 };
