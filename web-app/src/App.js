@@ -9,6 +9,7 @@ const App = () => {
   const [center, setCenter] = useState(null);
   const [currentMarkers, setCurrentMarkers] = useState({});
 
+
   useEffect(() => {
     // Conectar-se ao servidor Socket.IO
     const socket = socketIOClient('http://localhost:4000');

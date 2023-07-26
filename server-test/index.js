@@ -1,9 +1,5 @@
-const socketIO = require('socket.io');
 const Axios = require('axios');
-
-const app = express();
-const server = http.createServer(app);
-const io = socketIO(server);
+const { io } = require('socket.io-client');
 
 require('dotenv').config();
 
@@ -23,8 +19,8 @@ async function getRouteCoordinates(start, end) {
   }
 }
 
-// Enviar as coordenadas para o cliente em intervalos de tempo
-async function sendCoordinatesToClient(socket, deviceId, start, end) {
+// Enviar as coordenadas para o servidor em intervalos de tempo
+async function sendCoordinatesToServer(socket, deviceId, start, end) {
   const coordinates = await getRouteCoordinates(start, end);
 
   let currentIndex = 0;
@@ -36,7 +32,7 @@ async function sendCoordinatesToClient(socket, deviceId, start, end) {
     }
 
     const coordinate = [coordinates[currentIndex][1], coordinates[currentIndex][0]];
-    console.log(`Enviando coordenadas para o cliente ${deviceId}:`, coordinate);
+    console.log(`Enviando coordenadas para o servidor ${deviceId}:`, coordinate);
     socket.emit('coordinate', { deviceId, coordinate });
     currentIndex++;
   }, 4000);
@@ -50,20 +46,21 @@ const routes = [
   // Adicione quantos conjuntos de coordenadas quiser aqui
 ];
 
-// Iniciar o servidor e enviar as coordenadas para o cliente quando ele se conectar
-io.on('connection', (socket) => {
-  console.log('Cliente conectado');
+// Conectar ao servidor na porta 4000
+const socket = io('http://localhost:4000');
 
-  socket.on('disconnect', () => {
-    console.log('Cliente desconectado');
-  });
+// Enviar as coordenadas para o servidor quando a conexão for estabelecida
+socket.on('connect', () => {
+  console.log('Cliente conectado ao servidor');
 
+  // Enviar as coordenadas para o servidor para cada rota
   routes.forEach((route, index) => {
-    sendCoordinatesToClient(socket, index, route.start, route.end);
+    const deviceId = `device${index + 1}`;
+    sendCoordinatesToServer(socket, deviceId, route.start, route.end);
   });
 });
 
-const port = 4000;
-server.listen(port, () => {
-  console.log(`Servidor rodando na porta ${port}`);
+// Tratar a desconexão do servidor
+socket.on('disconnect', () => {
+  console.log('Cliente desconectado do servidor');
 });
