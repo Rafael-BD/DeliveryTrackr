@@ -20,7 +20,7 @@ O DeliveryTrackr é um sistema de rastreamento que permite acompanhar o status d
 - Express.js
 - Material UI
 - Styled Components
-- Dgram (para comunicação UDP)
+- Socket.IO (para comunicação via web sockets)
 - MongoDB (banco de dados)
 
 ## Status do Projeto
